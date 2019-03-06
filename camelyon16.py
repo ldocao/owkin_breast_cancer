@@ -3,6 +3,7 @@ __all__ = ["TrainingPatients", "TestPatients"]
 import os
 import glob
 import abc
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -51,16 +52,15 @@ class Camelyon16(object):
             numbers: ['004', '338', ...]
         """
         absolute_paths = self._resnet_files()
-        basenames = [os.path.basename(s) for s in absolute_paths]
-        ids = [s.split(".")[0] for s in basenames]
+        ids = [Path(s).stem for s in absolute_paths]
         numbers = [s.split("_")[1] for s in ids]
         return sorted(numbers)
 
 
     def _resnet_files(self):
         SUB_FOLDER = "resnet_features"
-        path = os.path.join(self.path, SUB_FOLDER)
-        absolute_paths = glob.glob(path+"/*.npy")
+        path = Path(self.path) / SUB_FOLDER
+        absolute_paths = path.glob("*.npy")
         return absolute_paths
 
 
