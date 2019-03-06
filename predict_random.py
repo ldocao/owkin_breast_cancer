@@ -12,5 +12,4 @@ patient_ids = TestPatients().ids()
 n_patients = len(patient_ids)
 
 random_probabilities = np.random.uniform(size=n_patients)
-Challenge(patient_ids, random_probabilities).submit("test_predictions.csv")
-
+Challenge(patient_ids, random_probabilities).submit("predict_random.csv")
