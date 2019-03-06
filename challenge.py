@@ -7,6 +7,15 @@ class Challenge(object):
     INDEX_NAME = "ID"
 
     def __init__(self, patient_ids, probabilities):
+        """
+        Parameters
+        ----------
+        patient_ids: list of str, or int
+            identifier of patients (eg: [1,2] or ['001', '002'] or ['1', '2'])
+
+        probabilities: list of float
+            probability of presence of metastases
+        """
         self.patient_ids = patient_ids
         self.probabilities = probabilities
         self.predictions = self._format_output()
