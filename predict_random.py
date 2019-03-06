@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 
 from test_patients import TestPatients
+from challenge import Challenge
 
 
-TARGET = TestPatients.TARGET_COLUMN
+TARGET = Challenge.TARGET_COLUMN
 patient_ids = TestPatients.ids()
 n_patients = len(patient_ids)
 
 random_probabilities = np.random.uniform(size=n_patients)
-predictions = pd.DataFrame({TARGET: random_probabilities}, index=patient_ids)
+Challenge(patient_ids, random_probabilities).submit("test_predictions.csv")
 
-TestPatients(predictions).submit("test_predictions.csv")
