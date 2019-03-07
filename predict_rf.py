@@ -77,7 +77,7 @@ best_params = {'max_depth': 5,
 clf = RandomForestClassifier(**best_params, n_jobs=-1)
 clf.fit(features_train, Y_train)
 results = clf.predict_proba(features_test)
-results = [x[0] for x in results]
+results = [r[1] for r in results]
 Challenge(test_patients.ids(), results).submit("predict_rf.csv")
 
 
