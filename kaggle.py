@@ -1,7 +1,9 @@
 #PURPOSE: kaggle dataset
 
+
 from pathlib import Path
 
+import pandas as pd
 import cv2
 
 class TiffImage:
@@ -24,7 +26,7 @@ class Kaggle:
     
     @property
     def filenames(self):
-        return self.path.glob("*.tif")
+        return sorted(self.path.glob("*.tif"))
     
 
     
@@ -35,11 +37,12 @@ class TrainingImages(Kaggle):
         self.path = Path(self.__class__.ROOT_PATH) / path
 
         
+    @property
     def ground_truths(self):
         cls = self.__class__
         ground_truths = pd.read_csv(self.path / cls.GROUND_TRUTH)
         ground_truths.set_index("id", inplace=True)
-        return ground_truths
+        return ground_truths.sort_index()
 
 
 
