@@ -31,7 +31,7 @@ class InceptionV3(ImageClassifier):
             layer.trainable = False
             
         self.model.compile(optimizer='rmsprop',
-                           loss='binary7_crossentropy',
+                           loss='binary_crossentropy',
                            metrics=['accuracy'])
 
 
@@ -47,12 +47,7 @@ class InceptionImage(object):
     def preprocess(self):
         """Returns content of image normalized for inception model"""
         x = self.content
-        x /= 255.
-        x -= 0.5
-        x *= 2.
-        x = np.expand_dims(x, axis=0)
-        return x
-
+        return self._preprocess(x)
 
     def _open(self):
         """Returns content of image as numpy array and resized"""
@@ -60,6 +55,18 @@ class InceptionImage(object):
         content = image.img_to_array(content)
         return content
 
+    @staticmethod
+    def _preprocess(x):
+        """Returns preprocessed numpy array
+
+        Note: for use by external app
+        """
+        x /= 255.
+        x -= 0.5
+        x *= 2.
+        x = np.expand_dims(x, axis=0)
+        return x
+        
 
     
 class InceptionAlbum(object):
