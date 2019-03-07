@@ -1,8 +1,9 @@
 #PURPOSE: kaggle dataset
 
-
+import random
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import cv2
 
@@ -32,6 +33,7 @@ class Kaggle:
     
 class TrainingImages(Kaggle):
     GROUND_TRUTH = "train_labels.csv"
+    TRAINING_SIZE = 0.8 
     
     def __init__(self, path="train"):
         self.path = Path(self.__class__.ROOT_PATH) / path
@@ -44,7 +46,19 @@ class TrainingImages(Kaggle):
         ground_truths.set_index("id", inplace=True)
         return ground_truths.sort_index()
 
+    @property
+    def training(self):
+        SEED = 1
+        np.random.seed(SEED)
+        all_paths = self.ground_truths.index.values
+        n_samples = int(len(all_paths)*self.__class__.TRAINING_SIZE)
+        return np.random.choice(all_paths, n_samples, replace=False) #gt is balanced
 
+
+    @property
+    def validation(self):
+        remaining = set(self.ground_truths.index) - set(self.training)
+        return remaining
 
 
 class TestImages(Kaggle):
