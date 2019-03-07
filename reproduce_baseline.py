@@ -22,7 +22,7 @@ def mean_resnet(dataset):
 print("loading training set")
 training_patients = TrainingPatients()
 features_train = mean_resnet(training_patients)
-ground_truths = training_patients.ground_truths()
+ground_truths = training_patients.ground_truths
 
 #test set
 print("loading test set")
