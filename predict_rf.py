@@ -41,22 +41,25 @@ features_test = mean_resnet(test_patients)
 
 
 # grid search for hyper parameters
-print("grid search")
-grid = {'n_estimators' : np.linspace(500, 2000, 5, dtype=int),
-        'max_depth' : np.linspace(5, 100, 5, dtype=int),
-        "max_features": np.linspace(2, 200, 5, dtype=int)}
-rfc = RandomForestClassifier(n_jobs=-1)
-grid_search = GridSearchCV(rfc, grid, cv=5, n_jobs=-1)
-grid_search.fit(features_train, Y_train)
-grid_search.best_params_
+# print("grid search")
+# grid = {'n_estimators' : np.linspace(500, 2000, 5, dtype=int),
+#         'max_depth' : np.linspace(5, 100, 5, dtype=int),
+#         "max_features": np.linspace(2, 200, 5, dtype=int)}
+# rfc = RandomForestClassifier(n_jobs=-1)
+# grid_search = GridSearchCV(rfc, grid, cv=5, n_jobs=-1)
+# grid_search.fit(features_train, Y_train)
+# grid_search.best_params_
 
 
 # cross val score
+best_params = {'max_depth': 5,
+               'max_features': 51,
+               'n_estimators': 1625}
 # print("cross val score")
 # N_RUNS = 5
 # aucs = []
 # for seed in range(N_RUNS):
-#     estimator = RandomForestClassifier(**best_params, probability=True)
+#     estimator = RandomForestClassifier(**best_params, n_jobs=-1)
 #     cv = StratifiedKFold(n_splits=5,
 #                          shuffle=True,
 #                          random_state=seed)
@@ -70,11 +73,11 @@ grid_search.best_params_
 # print(auc.mean(), auc.std())
 
 
-# # classifier using grid search results
-# clf = SVC(**best_params, probability=True)
-# clf.fit(features_train, Y_train)
-# results = clf.predict_proba(X_test)
-# results = [x[0] for x in results]
-# Challenge(test_patients.ids(), results).submit("predict_rf.csv")
+# classifier using grid search results
+clf = RandomForestClassifier(**best_params, n_jobs=-1)
+clf.fit(features_train, Y_train)
+results = clf.predict_proba(features_test)
+results = [x[0] for x in results]
+Challenge(test_patients.ids(), results).submit("predict_rf.csv")
 
 
