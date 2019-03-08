@@ -6,6 +6,9 @@ from kaggle import TiffImage, TrainingImages, TestImages
 from nasnet_mobile import NasnetMobile
 
 
+#hardware specs
+BATCH_SIZE = 32
+
 
 # raw data
 print("load data")
@@ -32,7 +35,7 @@ train_generator = train_datagen.flow_from_dataframe(train_df.reset_index(),
                                                     directory,
                                                     x_col="id", y_col="label", 
                                                     target_size=NasnetMobile.INPUT_SHAPE[:2],
-                                                    batch_size=32,
+                                                    batch_size=BATCH_SIZE,
                                                     class_mode='binary')
 
 validation_df = gt.loc[validation]
@@ -43,7 +46,7 @@ validation_generator = validation_datagen.flow_from_dataframe(validation_df.rese
                                                               directory,
                                                               x_col="id", y_col="label", 
                                                               target_size=NasnetMobile.INPUT_SHAPE[:2],
-                                                              batch_size=32,
+                                                              batch_size=BATCH_SIZE,
                                                               class_mode='binary')
             
 
@@ -67,9 +70,9 @@ callbacks_list = [checkpoint]
 
 # train the model
 print("train")
-N_STEPS_PER_EPOCH = 5000
-N_EPOCHS = 50
-VALIDATION_STEPS = 50
+N_STEPS_PER_EPOCH = len(training) // len(BATCH_SIZE)
+VALIDATION_STEPS = len(validation) // len(BATCH_SIZE)
+N_EPOCHS = 10
 history = model.fit_generator(train_generator,
                               steps_per_epoch=N_STEPS_PER_EPOCH,
                               epochs=N_EPOCHS,
