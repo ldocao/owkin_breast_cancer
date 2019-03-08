@@ -70,8 +70,8 @@ callbacks_list = [checkpoint]
 
 # train the model
 print("train")
-N_STEPS_PER_EPOCH = len(training) // len(BATCH_SIZE)
-VALIDATION_STEPS = len(validation) // len(BATCH_SIZE)
+N_STEPS_PER_EPOCH = len(training) // BATCH_SIZE
+VALIDATION_STEPS = len(validation) // BATCH_SIZE
 N_EPOCHS = 10
 history = model.fit_generator(train_generator,
                               steps_per_epoch=N_STEPS_PER_EPOCH,
