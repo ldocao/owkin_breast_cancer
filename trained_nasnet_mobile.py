@@ -12,11 +12,14 @@ from sklearn.metrics import roc_auc_score
 
 from kaggle import TrainingImages, TestImages
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-#hardware specs
+USE_CPU = False
 BATCH_SIZE = 32
+
+if USE_CPU:
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 
 
 #model
@@ -25,19 +28,14 @@ TRAINED_NASNET = "/home/ldocao/owkin/kaggle/models/trained_nasnet_mobile.h5"
 nasnet = load_model(TRAINED_NASNET, compile=False) #use compile option https://stackoverflow.com/questions/53740577/does-any-one-got-attributeerror-str-object-has-no-attribute-decode-whi
 
 
-#data
+#kaggle data
 print("load data")
 training = TrainingImages().training
 validation = TrainingImages().validation
 gt = TrainingImages().ground_truths
-test = TestImages().filenames
-
 
 def chunker(seq, size):
     return (seq[pos: pos+size] for pos in range(0, len(seq), size))
-
-
-
 
 preds = []
 ids = []
@@ -51,4 +49,9 @@ for batch in chunker(training, BATCH_SIZE):
     ids += list(batch)
     
 
-print(roc_auc_score(gt["label"].values, preds))
+print(roc_auc_score(gt.loc[training]["label"].values, preds)) #check AUC on training set, must be close to 1
+#Out[4]: 0.9927753500420746
+
+
+
+#owkin data
