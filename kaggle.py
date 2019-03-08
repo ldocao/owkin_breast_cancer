@@ -22,7 +22,7 @@ class TiffImage:
         
 
 class Kaggle:
-    ROOT_PATH = "/Users/ldocao/Documents/Personnel/Recherche emploi/data science/2019 02 05 Owkin/interview 3/kaggle"
+    ROOT_PATH = "/home/ldocao/owkin/kaggle"
 
     
     @property
