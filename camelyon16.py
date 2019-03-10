@@ -14,7 +14,7 @@ from challenge import Challenge
 
 
 class Camelyon16(object):
-    ROOT_PATH = "/Users/ldocao/Documents/Personnel/Recherche emploi/data science/2019 02 05 Owkin/interview 3/data"
+    ROOT_PATH = "/home/ldocao/owkin/data"
     PREFIX = "ID_"
 
 
@@ -137,9 +137,27 @@ class TrainingPatients(Camelyon16):
         tile_infos.index = annotations[FILENAME]
         int_columns = ["zoom_level", "x", "y"]
         tile_infos[int_columns] = tile_infos[["zoom_level", "x", "y"]].astype(int)
+        tile_infos[Challenge.TARGET_COLUMN] = annotations.set_index(FILENAME)[Challenge.TARGET_COLUMN]
         return tile_infos
 
 
     @classmethod
     def ground_truth_path(cls):
-        return os.path.join(cls.ROOT_PATH, cls.GROUND_TRUTH)
+        return os.path.join(cls.ROOT_PATH, "train_input", cls.GROUND_TRUTH)
+
+
+
+class AnnotatedTile:
+    ROOT_PATH = Camelyon16.ROOT_PATH
+    
+    def __init__(self, filename):
+        self.filename = filename
+
+    @property
+    def path(self):
+        PATH = Path(self.__class__.ROOT_PATH) / "train_input/images" 
+        directory = self.filename.split("_")[:3]
+        directory = "_".join(directory)
+        return PATH / directory / self.filename
+
+        
