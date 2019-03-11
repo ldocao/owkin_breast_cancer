@@ -2,8 +2,8 @@ __all__ = ["TrainingPatients", "TestPatients"]
 
 import os
 import glob
-import abc
 from pathlib import Path
+
 
 import numpy as np
 import pandas as pd
@@ -13,37 +13,36 @@ from challenge import Challenge
 
 
 
+
 class Camelyon16(object):
     ROOT_PATH = "/home/ldocao/owkin/data"
     PREFIX = "ID_"
 
+    def __init__(self, path=None):
+        self.path = os.path.join(self.ROOT_PATH, path)
+
+    @property
+    def filenames(self):
+        path = Path(self.path) / "images"
+        files = path.glob("**/*.jpg")
+        return files
+
+    @property
+    def tiles(self):
+        COLUMNS = ["patient_id", "tile_id", "zoom_level", "x", "y", "is_annotated"]
+        INDEX_NAME = "filename"
+        tile_path = Path(self.path) / self.__class__.TILE_INFO
+        if tile_path.exists():
+            tile_infos = pd.read_csv(tile_path)
+            tile_infos.set_index(INDEX_NAME, inplace=True)
+        else:
+            tile_infos = self._extract_tile_infos()
+            tile_infos = pd.DataFrame.from_dict(tile_infos, orient="index", columns=COLUMNS)
+            tile_infos.index.name = INDEX_NAME
+            tile_infos.to_csv(tile_path)
+        return tile_infos
 
     
-    def resnet_features(self, patient_id):
-        """Returns resnet features (without location)
-
-        Parameters
-        ----------
-        patient_id: str or int
-            patient identifier
-
-        """
-        EXTENSION = ".npy"
-        SUBFOLDER = "resnet_features"
-        basename = self._id_to_filename(patient_id)
-
-        try: #is the file annotated?
-            ANNOTATION = "_annotated"
-            filename = basename + ANNOTATION + EXTENSION
-            path = os.path.join(self.path, SUBFOLDER, filename)            
-            features = np.load(path)
-        except FileNotFoundError: #load default filename
-            filename = basename + EXTENSION
-            path = os.path.join(self.path, SUBFOLDER, filename)  
-            features = np.load(path)
-        finally:
-            features = features[:, 3:] #remove location features
-            return features
 
 
     def ids(self):
@@ -59,6 +58,32 @@ class Camelyon16(object):
         return sorted(numbers)
 
 
+    def _extract_tile_infos(self):
+        """Returns tile informations"""
+        tiles = Path(self.path).glob("images/**/*.jpg")
+        tile_infos = {} #use dict structure to speed up for loop below
+        for t in tiles:
+            new_index = str(t.absolute()) #use absolute path as index
+            tile_infos[new_index] = self.split_filename_info(t.name)
+        return tile_infos
+    
+    @staticmethod
+    def split_filename_info(filename):
+        """Returns (patient_id, tile_id, zoom_level, x, y, is_annotated)"""
+        separated_info = str(filename).split("_")
+        is_annotated = len(separated_info) == 8
+        separated_info[-1] = separated_info[-1].split(".")[0] #remove extension
+        del separated_info[0]
+        if is_annotated:
+            del separated_info[1]
+            del separated_info[1]
+        else:
+            del separated_info[1]
+        separated_info[1:] = [int(s) for s in separated_info[1:]]
+        separated_info.append(is_annotated)
+        return separated_info
+
+    
     def _resnet_files(self):
         SUB_FOLDER = "resnet_features"
         path = Path(self.path) / SUB_FOLDER
@@ -83,6 +108,7 @@ class Camelyon16(object):
 
 class TestPatients(Camelyon16):
     """Patient test set"""
+    TILE_INFO = "tile_informations.csv"
     
     def __init__(self, path="test_input"):
         """
@@ -91,15 +117,14 @@ class TestPatients(Camelyon16):
         path: str
             path from main Camelyon16 dataset directory
         """
-        self.path = os.path.join(self.ROOT_PATH, path)
-
-
+        super().__init__(path)
 
         
         
 class TrainingPatients(Camelyon16):
     GROUND_TRUTH = "training_output_bis_EyawEvU.csv"
     ANNOTATION = "train_tile_annotations.csv"
+    TILE_INFO = "tile_informations.csv"
     
     def __init__(self, path="train_input"):
         """
@@ -108,8 +133,12 @@ class TrainingPatients(Camelyon16):
         path: str
             path from main Camelyon16 dataset directory
         """
-        self.path = os.path.join(self.ROOT_PATH, path)
+        super().__init__(path)
 
+
+
+
+        
     @property
     def ground_truths(self):
         """Returns ground truth labels as dataframe"""
@@ -144,6 +173,9 @@ class TrainingPatients(Camelyon16):
     @classmethod
     def ground_truth_path(cls):
         return os.path.join(cls.ROOT_PATH, "train_input", cls.GROUND_TRUTH)
+        
+
+
 
 
 
