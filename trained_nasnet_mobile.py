@@ -5,13 +5,14 @@ import os
 import cv2
 
 import numpy as np
+import pandas as pd
 
 from keras.models import load_model
 from keras.applications.nasnet import preprocess_input
 from sklearn.metrics import roc_auc_score
 
 from kaggle import TrainingImages, TestImages
-
+from camelyon16 import TrainingPatients, TestPatients
 
 USE_CPU = False
 BATCH_SIZE = 32
@@ -25,33 +26,34 @@ if USE_CPU:
 #model
 print("load model")
 TRAINED_NASNET = "/home/ldocao/owkin/kaggle/models/trained_nasnet_mobile.h5"
+INPUT_SHAPE = (96, 96)
 nasnet = load_model(TRAINED_NASNET, compile=False) #use compile option https://stackoverflow.com/questions/53740577/does-any-one-got-attributeerror-str-object-has-no-attribute-decode-whi
 
 
-#kaggle data
-print("load data")
-training = TrainingImages().training
-validation = TrainingImages().validation
-gt = TrainingImages().ground_truths
 
 def chunker(seq, size):
     return (seq[pos: pos+size] for pos in range(0, len(seq), size))
 
-preds = []
-ids = []
-PATH = "/home/ldocao/owkin/kaggle/train/"
-
-for batch in chunker(training, BATCH_SIZE):
-    X = [preprocess_input(cv2.imread(PATH+x+".tif")) for x in batch]
-    X = np.array(X)
-    preds_batch = nasnet.predict(X)
-    preds += preds_batch.T.tolist()[0]
-    ids += list(batch)
-    
-
-print(roc_auc_score(gt.loc[training]["label"].values, preds)) #check AUC on training set, must be close to 1
-#Out[4]: 0.9927753500420746
-
-
 
 #owkin data
+training = TrainingPatients().tiles
+training["dataset"] = "training"
+
+preds = []
+ids = []
+n_batch = len(training) // BATCH_SIZE
+count = 0
+for batch in chunker(training.index, BATCH_SIZE):
+    print(count, n_batch)
+    X = [preprocess_input(cv2.resize(cv2.imread(x), INPUT_SHAPE)) for x in batch]
+    X = np.array(X)
+    preds_batch = nasnet.predict(X)
+#    d = {k: p for k, p in zip(list(batch), preds_batch)}
+    preds += preds_batch.T.tolist()[0]
+    ids += list(batch)
+    count += 1
+
+training["prediction_probas"] = preds
+predictions = training.groupby("patient_id")[["prediction_probas"]].max()
+gt = TrainingPatients().ground_truths
+print(roc_auc_score(gt["Target"].values, predictions))
