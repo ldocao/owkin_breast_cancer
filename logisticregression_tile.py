@@ -11,7 +11,7 @@ from keras.preprocessing import image
 from keras.applications.resnet50 import ResNet50, preprocess_input
 
 
-from camelyon16 import TrainingPatients, AnnotatedTile
+from camelyon16 import TrainingPatients, AnnotatedTile, TestPatients
 
 
 
@@ -105,3 +105,8 @@ y_test = annotations.loc[test_files]["Target"]
 
 auc = roc_auc_score(y_test, test_predicts)
 print("auc score", auc)
+
+
+
+## now predict on the real test set
+test_files = TestPatients().filenames
