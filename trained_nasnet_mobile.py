@@ -12,7 +12,7 @@ from keras.applications.nasnet import preprocess_input
 from sklearn.metrics import roc_auc_score
 
 from kaggle import TrainingImages, TestImages
-from camelyon16 import TrainingPatients, TestPatients
+from camelyon16 import TrainingPatients, TestPatients, AnnotatedTile
 
 USE_CPU = False
 BATCH_SIZE = 32
@@ -35,12 +35,11 @@ def chunker(seq, size):
     return (seq[pos: pos+size] for pos in range(0, len(seq), size))
 
 
-#owkin data
+#whole owkin training data
 training = TrainingPatients().tiles
 training["dataset"] = "training"
 
-preds = []
-ids = []
+preds = {}
 n_batch = len(training) // BATCH_SIZE
 count = 0
 for batch in chunker(training.index, BATCH_SIZE):
@@ -48,12 +47,31 @@ for batch in chunker(training.index, BATCH_SIZE):
     X = [preprocess_input(cv2.resize(cv2.imread(x), INPUT_SHAPE)) for x in batch]
     X = np.array(X)
     preds_batch = nasnet.predict(X)
-#    d = {k: p for k, p in zip(list(batch), preds_batch)}
-    preds += preds_batch.T.tolist()[0]
-    ids += list(batch)
+    d = {k: p[0] for k, p in zip(list(batch), preds_batch)}
+    preds = {**preds, **d}
     count += 1
 
-training["prediction_probas"] = preds
+preds = pd.DataFrame.from_dict(preds, orient="index")
+training["prediction_probas"] = preds[0]
 predictions = training.groupby("patient_id")[["prediction_probas"]].max()
 gt = TrainingPatients().ground_truths
 print(roc_auc_score(gt["Target"].values, predictions))
+
+#tile level training data
+annotated_tiles = TrainingPatients().annotations
+
+preds = {}
+n_batch = len(annotated_tiles) // BATCH_SIZE
+count = 0
+for batch in chunker(annotated_tiles.index, BATCH_SIZE):
+    print(count, n_batch)
+    X = [preprocess_input(cv2.resize(cv2.imread(str(AnnotatedTile(x).path)), INPUT_SHAPE)) for x in batch]
+    X = np.array(X)
+    preds_batch = nasnet.predict(X)
+    d = {k: p[0] for k, p in zip(list(batch), preds_batch)}
+    preds = {**preds, **d}
+    count += 1
+
+preds = pd.DataFrame.from_dict(preds, orient="index")
+annotated_tiles["prediction_probas"] = preds[0]
+print(roc_auc_score(annotated_tiles["Target"], annotated_tiles["prediction_probas"]))
