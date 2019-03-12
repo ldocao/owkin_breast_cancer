@@ -3,6 +3,7 @@ import ipdb
 import os
 import cv2
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -38,7 +39,6 @@ print("define data augmentation")
 train_df = tiles.loc[training]
 train_datagen = ImageDataGenerator(shear_range=0.2,
                                    zoom_range=0.2,
-#                                   brightness_range=0.1,
                                    height_shift_range=0.2,
                                    width_shift_range=0.2,
                                    rotation_range=90,
@@ -63,28 +63,44 @@ validation_generator = validation_datagen.flow_from_dataframe(validation_df.rese
 
 
 
-# #checkpoint strategy
-# print("define checkpoint strategy")
-# filepath="weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
-# checkpoint = ModelCheckpoint(filepath,
-#                                                           monitor='val_acc',
-#                                                           verbose=1,
-#                                                           save_best_only=True,
-#                                                           mode='max')
-# callbacks_list = [checkpoint]
 
-n = 1 #run number
-tbCallBack = keras.callbacks.TensorBoard(log_dir=f'../tensorboard/run_{n}',
+#auto numbering
+TENSORBOARD_PATH = Path("/home/ldocao/owkin/tensorboard")
+run_identifier = 0
+
+run_dir_exists = True
+while run_dir_exists:
+    run_identifier += 1
+    run_id = str(run_identifier).zfill(3)
+    new_dir = TENSORBOARD_PATH / f"run_{run_id}"
+    run_dir_exists = new_dir.exists()
+
+else:
+    new_dir.mkdir()
+    print("output path:", new_dir)
+
+#checkpoint strategy
+print("define checkpoint strategy")
+filepath = new_dir / "weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+checkpoint = ModelCheckpoint(str(filepath),
+                             monitor='val_acc',
+                             verbose=1,
+                             save_best_only=True,
+                             mode='max')
+
+
+tbCallBack = keras.callbacks.TensorBoard(log_dir=str(new_dir),
                                          histogram_freq=0,
+                                         update_freq="batch",
                                          write_graph=True,
                                          write_images=True)
-callbacks_list = [tbCallBack]
+callbacks_list = [tbCallBack, checkpoint]
 
 # train the model
 print("train")
 N_STEPS_PER_EPOCH = len(training) // BATCH_SIZE
 VALIDATION_STEPS = len(validation) // BATCH_SIZE
-N_EPOCHS = 10
+N_EPOCHS = 20
 history = resnet.fit_generator(train_generator,
                                steps_per_epoch=N_STEPS_PER_EPOCH,
                                epochs=N_EPOCHS,
