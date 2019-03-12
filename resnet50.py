@@ -5,9 +5,6 @@ from keras.losses import binary_crossentropy
 from keras.models import Model
 
 
-from image_classifier import ImageClassifier
-
-
 
 class ResNet:
     INPUT_SHAPE = (96, 96, 3)
