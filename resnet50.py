@@ -31,7 +31,7 @@ class ResNet:
         for layer in self.base_model.layers:
             layer.trainable = False
 
-        LEARNING_RATE = 0.00001 
+        LEARNING_RATE = 0.000003
         model.compile(optimizer=Adam(LEARNING_RATE, decay=1e-6),
                       loss=binary_crossentropy,
                       metrics=['acc'])
