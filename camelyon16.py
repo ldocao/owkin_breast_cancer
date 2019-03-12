@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
+from sklearn.model_selection import train_test_split
 from challenge import Challenge
 
 
@@ -125,6 +125,7 @@ class TrainingPatients(Camelyon16):
     GROUND_TRUTH = "training_output_bis_EyawEvU.csv"
     ANNOTATION = "train_tile_annotations.csv"
     TILE_INFO = "tile_informations.csv"
+    TRAIN_SIZE = 0.9
     
     def __init__(self, path="train_input"):
         """
@@ -135,10 +136,15 @@ class TrainingPatients(Camelyon16):
         """
         super().__init__(path)
 
-
-
-
         
+    def split_tiles_train_validation(self):
+        TRAIN_SIZE = self.__class__.TRAIN_SIZE
+        TARGET_NAME = Challenge.TARGET_COLUMN
+        train, validation = train_test_split(self.annotations.index,
+                                             train_size=TRAIN_SIZE,
+                                             stratify=self.annotations[TARGET_NAME])
+        return train, validation
+    
     @property
     def ground_truths(self):
         """Returns ground truth labels as dataframe"""
