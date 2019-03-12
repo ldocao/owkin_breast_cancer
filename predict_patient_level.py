@@ -10,6 +10,7 @@ import seaborn as sns
 
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import minmax_scale
+from sklearn.metrics import roc_auc_score
 from camelyon16 import TrainingPatients, TestPatients, AnnotatedTile
 
 DIR = "/home/ldocao/owkin/tensorboard/run_002"
@@ -21,6 +22,7 @@ test_tile_infos = TestPatients().tiles
 tile_infos = pd.concat([training_tile_infos, test_tile_infos])
 tiles = tile_infos.merge(tile_probas, how="left", right_index=True, left_index=True)
 tiles = tiles[["patient_id", "x", "y", "p"]]
+
 
 #rescale x,y to [0,1], just like p
 tiles["x_norm"] = minmax_scale(tiles["x"])
@@ -38,7 +40,6 @@ for p in patients:
     tiles.loc[is_selected, "cluster"] = clusters
     count += 1
 
-
     df = pd.pivot_table(tiles[is_selected], index="y", columns=["x"], values="p", fill_value=-1)
     
     plt.figure()
@@ -48,8 +49,16 @@ for p in patients:
 
     df = pd.pivot_table(tiles[is_selected], index="y", columns=["x"], values="cluster", fill_value=-2)
     plt.figure()
-    sns.heatmap(df, vmin=-2, vmax=10, center=0, cmap="Set1")
+    sns.heatmap(df, vmin=-2, vmax=5, center=0, cmap="Set1")
     plt.savefig(f"predict_patient_level_cluster_{p}.png")
     plt.close()
     
 
+#predict on real test set
+is_isolated = tiles["cluster"] == -1
+tiles = tiles[~is_isolated]
+predictions = tiles.groupby("patient_id").max()[["p"]]
+predictions.index = [str(i).zfill(3) for i in predictions.index]
+predictions.index.name = "ID"
+predictions.rename(columns={"p": "Target"}, inplace=True)
+predictions.loc[TestPatients().ids()].to_csv("predict_patient_level.csv")
