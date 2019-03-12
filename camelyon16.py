@@ -149,6 +149,7 @@ class TrainingPatients(Camelyon16):
     def ground_truths(self):
         """Returns ground truth labels as dataframe"""
         ground_truths = pd.read_csv(self.ground_truth_path())
+        ground_truths[Challenge.INDEX_NAME] = [str(i).zfill(3) for i in ground_truths[Challenge.INDEX_NAME]]
         ground_truths.set_index(Challenge.INDEX_NAME, inplace=True)
         return ground_truths
 
