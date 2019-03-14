@@ -15,7 +15,7 @@ from challenge import Challenge
 
 
 class Camelyon16(object):
-    ROOT_PATH = "/home/ldocao/owkin/data"
+    ROOT_PATH = "/Users/ldocao/Documents/Personnel/Recherche emploi/data science/2019 02 05 Owkin/interview 3/data"
     PREFIX = "ID_"
 
     def __init__(self, path=None):
@@ -42,9 +42,7 @@ class Camelyon16(object):
             tile_infos.to_csv(tile_path)
         return tile_infos
 
-    
-
-
+    @property
     def ids(self):
         """Return ids of patients
 
@@ -56,6 +54,24 @@ class Camelyon16(object):
         ids = [Path(s).stem for s in absolute_paths]
         numbers = [s.split("_")[1] for s in ids]
         return sorted(numbers)
+
+    def resnet_features(self, patient_id):
+        EXTENSION = ".npy"	
+        SUBFOLDER = "resnet_features"	
+        basename = self._id_to_filename(patient_id)	
+
+        try: #is the file annotated?	
+            ANNOTATION = "_annotated"	
+            filename = basename + ANNOTATION + EXTENSION	
+            path = os.path.join(self.path, SUBFOLDER, filename)            	
+            features = np.load(path)	
+        except FileNotFoundError: #load default filename	
+            filename = basename + EXTENSION	
+            path = os.path.join(self.path, SUBFOLDER, filename)  	
+            features = np.load(path)	
+        finally:	
+            features = features[:, 3:] #remove location features	
+            return features
 
 
     def _extract_tile_infos(self):
