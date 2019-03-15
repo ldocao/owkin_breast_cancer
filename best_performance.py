@@ -6,7 +6,8 @@ import pandas as pd
 
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV, cross_val_score, StratifiedKFold
 from camelyon16 import TrainingPatients, TestPatients, AnnotatedTile
 
 
@@ -33,15 +34,23 @@ for i in range(n_training):
 X_train = np.reshape(X_train, [n_training, 4*2048])
 
 
+# grid search for hyper parameters
+# print("grid search")
+# grid = {'n_estimators' : np.linspace(500, 2000, 5, dtype=int),
+#         'max_depth' : np.linspace(5, 100, 5, dtype=int),
+#         "max_features": np.linspace(2, 200, 5, dtype=int)}
+# rfc = RandomForestClassifier(n_jobs=-1)
+# grid_search = GridSearchCV(rfc, grid, cv=5, n_jobs=-1)
+# grid_search.fit(X_train, Y_train)
+# grid_search.best_params_
+best_params = {'max_depth': 100, 'max_features': 150, 'n_estimators': 500}
 
 
 aucs = []
-N_RUNS = 10
+N_RUNS = 3
 for seed in range(N_RUNS):
-    PARAMS = {"penalty": "l2",
-              "C": 1.,
-              "solver": "liblinear"}
-    estimator = LogisticRegression(**PARAMS)
+    print(seed)
+    estimator = RandomForestClassifier(**best_params, n_jobs=-1)
     cv = StratifiedKFold(n_splits=5,
                          shuffle=True,
                          random_state=seed)
