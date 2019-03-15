@@ -153,15 +153,16 @@ class TrainingPatients(Camelyon16):
         """
         super().__init__(path)
 
+
+    def stack_annotated_tile_features(self):
+        annotated_patients = self.annotations["ID"].unique()
+        tiles = []
+        for p in annotated_patients:
+            resnet = self.resnet_features(p)
+            tiles.append(resnet)
+        return np.concatenate(tiles, axis=0)
+
         
-    def split_tiles_train_validation(self):
-        TRAIN_SIZE = self.__class__.TRAIN_SIZE
-        TARGET_NAME = Challenge.TARGET_COLUMN
-        train, validation = train_test_split(self.annotations.index,
-                                             train_size=TRAIN_SIZE,
-                                             stratify=self.annotations[TARGET_NAME])
-        return train, validation
-    
     @property
     def ground_truths(self):
         """Returns ground truth labels as dataframe"""
