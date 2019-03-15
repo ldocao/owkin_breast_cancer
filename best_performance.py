@@ -11,22 +11,66 @@ from sklearn.model_selection import GridSearchCV, cross_val_score, StratifiedKFo
 from camelyon16 import TrainingPatients, TestPatients, AnnotatedTile
 
 
-training_ids = TrainingPatients().ids
+
+N_RESNET = 2048
+
+
 annotated_tiles = TrainingPatients().annotations
 annotated_patients = annotated_tiles["ID"].unique()
-N_RESNET = 2048
-n_training = len(training_ids)
-Y_train = TrainingPatients().ground_truths["Target"].values 
+gt_tile = annotated_tiles["Target"].values
 
 
-tiles = []
-for p in sorted(annotated_patients):
-    resnet = TrainingPatients().resnet_features(p)
-    tiles.append(resnet)
+training_ids = TrainingPatients().ids
+gt_patient = TrainingPatients().ground_truths["Target"].values 
+n_patients = len(training_ids)
 
-tiles = np.concatenate(tiles, axis=0)
-X_train = tiles
-Y_train = annotated_tiles["Target"].values
+def train_tile():
+    tiles = []
+    for p in sorted(annotated_patients):
+        resnet = TrainingPatients().resnet_features(p)
+        tiles.append(resnet)
+        features_tile = np.concatenate(tiles, axis=0)
+        
+    PARAMS = {"penalty": "l2",
+              "C": 1.,
+              "solver": "liblinear"}
+    estimator = LogisticRegression(**PARAMS)
+    estimator.fit(features_tile, gt_tile)
+    return estimator
+
+
+def predict_not_annotated_tile(estimator):
+    results = {}
+    for p in training_ids:
+        resnet = TrainingPatients().resnet_features(p)
+        n_tiles = resnet.shape[0]
+        proba = estimator.predict_proba(resnet)[:,1]
+        results[p] = proba
+    return results
+
+
+def construct_features_from_tile(features):
+    QUARTILES = [25, 50, 75]
+    x1 = np.mean(features)
+    x2 = np.std(features)
+    x3 = np.percentile(features, QUARTILES[0])
+    x4 = np.percentile(features, QUARTILES[1])
+    x5 = np.percentile(features, QUARTILES[2])
+    x6 = np.max(features)
+    x7 = np.min(features)
+    x8 = (features > 0).sum() / len(features)
+    return (x1, x2, x3, x4, x5, x6, x7, x8)
+    
+
+tile_estimator = train_tile()
+predicted_tile_probas = predict_not_annotated_tile(tile_estimator)
+
+
+features_train_patients = np.zeros([n_patients, 8])
+for i in range(n_patients):
+    p = training_ids[i]
+    features_train_patients[i,:] = construct_features_from_tile(predicted_tile_probas[p])
+    
 
 aucs = []
 N_RUNS = 3
@@ -40,56 +84,7 @@ for seed in range(N_RUNS):
                          shuffle=True,
                          random_state=seed)
 
-    auc = cross_val_score(estimator, X=X_train, y=Y_train,
+    auc = cross_val_score(estimator, X=features_train_patients, y=gt_patient,
                           cv=cv, scoring="roc_auc", verbose=0)
     aucs.append(auc)
 aucs = np.array(aucs)
-
-
-
-# def features(i):
-#     print(i)
-#     r = TrainingPatients().resnet_features(i)
-#     x1 = np.mean(r, axis=0)
-#     x2 = np.std(r, axis=0)
-#     x3 = np.min(r, axis=0)
-#     x4 = np.max(r, axis=0)
-#     x = np.array([x1, x2, x3, x4])
-#     return x
-
-
-X_train = np.zeros([n_training, 4, 2048])
-for i in range(n_training):
-    X_train[i] = features(training_ids[i])
-    
-X_train = np.reshape(X_train, [n_training, 4*2048])
-
-
-# grid search for hyper parameters
-# print("grid search")
-# grid = {'n_estimators' : np.linspace(500, 2000, 5, dtype=int),
-#         'max_depth' : np.linspace(5, 100, 5, dtype=int),
-#         "max_features": np.linspace(2, 200, 5, dtype=int)}
-# rfc = RandomForestClassifier(n_jobs=-1)
-# grid_search = GridSearchCV(rfc, grid, cv=5, n_jobs=-1)
-# grid_search.fit(X_train, Y_train)
-# grid_search.best_params_
-best_params = {'max_depth': 100, 'max_features': 150, 'n_estimators': 500}
-
-
-# aucs = []
-# N_RUNS = 3
-# for seed in range(N_RUNS):
-#     print(seed)
-#     estimator = RandomForestClassifier(**best_params, n_jobs=-1)
-#     cv = StratifiedKFold(n_splits=5,
-#                          shuffle=True,
-#                          random_state=seed)
-
-#     auc = cross_val_score(estimator, X=X_train, y=Y_train,
-#                           cv=cv, scoring="roc_auc", verbose=0)
-#     aucs.append(auc)
-# aucs = np.array(aucs)
-
-# print("Predicting weak labels by mean resnet")
-# print("AUC: mean {}, std {}".format(aucs.mean(), aucs.std()))
