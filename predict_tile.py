@@ -8,7 +8,7 @@ import pickle
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
-from camelyon16 import TrainingPatients
+from camelyon16 import TrainingPatients, TestPatients
 from tile_predictor import LogisticRegressionL2
 
 
@@ -28,6 +28,17 @@ patient_ids = TrainingPatients().tiles["patient_id"].unique()
 patient_ids = [str(i).zfill(3) for i in patient_ids]
 tile_probas = clf.predict_tiles_of(patient_ids)
 
+#predict upon test tiles
+test_ids = TestPatients().ids
+test_probas = {}
+for p in test_ids:
+    resnet = TestPatients().resnet_features(p)
+    n_tiles = resnet.shape[0]
+    proba = clf.estimator.predict_proba(resnet)[:,1]
+    test_probas[p] = proba
+
+
+tile_probas = {**tile_probas, **test_probas} #merge training and test set
 
 with open('predict_tile.pkl', 'wb') as handle:
     pickle.dump(tile_probas, handle, protocol=pickle.HIGHEST_PROTOCOL)
