@@ -187,9 +187,10 @@ class TrainingPatients(Camelyon16):
                                    6: "x",
                                    7: "y"}, inplace=True)
         tile_infos.index = annotations[FILENAME]
-        int_columns = ["zoom_level", "x", "y"]
-        tile_infos[int_columns] = tile_infos[["zoom_level", "x", "y"]].astype(int)
+        int_columns = ["tile_id", "zoom_level", "x", "y"]
+        tile_infos[int_columns] = tile_infos[int_columns].astype(int)
         tile_infos[Challenge.TARGET_COLUMN] = annotations.set_index(FILENAME)[Challenge.TARGET_COLUMN]
+        tile_infos.sort_values(["ID", "tile_id"], inplace=True)
         return tile_infos
 
 
