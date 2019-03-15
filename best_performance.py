@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 
+import xgboost as xgb
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -80,11 +81,14 @@ for seed in range(N_RUNS):
               "C": 1.,
               "solver": "liblinear"}
     estimator = LogisticRegression(**PARAMS)
+    
     cv = StratifiedKFold(n_splits=5,
                          shuffle=True,
                          random_state=seed)
 
-    auc = cross_val_score(estimator, X=features_train_patients, y=gt_patient,
-                          cv=cv, scoring="roc_auc", verbose=0)
+    param = {'max_depth': 5, 'eta': 0.5, 'silent': 1, 'objective': 'binary:logistic'}
+    auc = xgb.cv(param, xgb.DMatrix(features_train_patients, label=gt_patient), nfold=5, stratified=True)
+    # auc = cross_val_score(estimator, X=features_train_patients, y=gt_patient,
+    #                       cv=cv, scoring="roc_auc", verbose=0)
     aucs.append(auc)
 aucs = np.array(aucs)
