@@ -25,6 +25,7 @@ clf = LogisticRegressionL2()
 #predict upon all tiles
 clf.train(features, ground_truths) #train over all annotated tiles
 patient_ids = TrainingPatients().tiles["patient_id"].unique()
+patient_ids = [str(i).zfill(3) for i in patient_ids]
 tile_probas = clf.predict_tiles_of(patient_ids)
 
 
