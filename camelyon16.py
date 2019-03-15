@@ -37,7 +37,8 @@ class Camelyon16(object):
             tile_infos.set_index(INDEX_NAME, inplace=True)
         else:
             tile_infos = self._extract_tile_infos()
-            tile_infos = pd.DataFrame.from_dict(tile_infos, orient="index", columns=COLUMNS)
+            tile_infos = pd.DataFrame.from_dict(tile_infos, orient="index")
+            tile_infos.columns = COLUMNS
             tile_infos.sort_values(["patient_id", "tile_id"], inplace=True)
             tile_infos.index.name = INDEX_NAME
             tile_infos.to_csv(tile_path)
