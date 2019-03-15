@@ -2,35 +2,31 @@
 
 import ipdb
 import os
+import pickle
 
-import numpy as np
-import pandas as pd
 
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
 from camelyon16 import TrainingPatients
-from tile_predictor import LogisticRegressionL2, XGBoost
+from tile_predictor import LogisticRegressionL2
 
 
 #training
 features = TrainingPatients().stack_annotated_tile_features()
 ground_truths = TrainingPatients().annotations["Target"].values
 
-
-#cross validation
-train_index, test_index = train_test_split(range(len(features)),
-                                           train_size=0.8,
-                                           stratify=ground_truths)
-train_features = features[train_index, :]
-train_gt = ground_truths[train_index]
-
-validation_features = features[test_index, :]
-validation_gt = ground_truths[test_index]
-
-xgb = XGBoost().train(train_features, train_gt)
-validation_proba = xgb.predict_proba(validation_features)
-roc_auc_score(validation_gt, validation_proba[:, 1])
-print(roc_auc_score)
+#grid search
+clf = LogisticRegressionL2()
+# best_params = clf.grid_search(features, ground_truths)
+# print(best_params)
 
 
+#predict upon all tiles
+clf.train(features, ground_truths) #train over all annotated tiles
+patient_ids = TrainingPatients().tiles["patient_id"].unique()
+tile_probas = clf.predict_tiles_of(patient_ids)
+
+
+with open('predict_tile.pkl', 'wb') as handle:
+    pickle.dump(tile_probas, handle, protocol=pickle.HIGHEST_PROTOCOL)
