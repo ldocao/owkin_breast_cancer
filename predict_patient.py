@@ -2,10 +2,13 @@ import ipdb
 
 import os
 import pickle
+from collections import Counter
 import numpy as np
 import pandas as pd
 
+from imblearn.over_sampling import SMOTE
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from camelyon16 import TrainingPatients
@@ -34,22 +37,33 @@ for i in range(n_patients):
 scaler = StandardScaler()
 features_patients = scaler.fit_transform(features_patients)
 
-
+#augment with SMOTE
+x_train, x_test, y_train, y_test = train_test_split(features_patients, gt_patients,
+                                                    test_size=0.2,
+                                                    shuffle=True, stratify=gt_patients,
+                                                    random_state=1)
 
 #train the model
 lr = LogisticRegressionL2()
-#lr.train(features_patients, gt_patients)
-N_RUNS = 4
-aucs = []
-for i in range(N_RUNS):
-    auc = lr.cross_validation(features_patients, gt_patients,seed=i)
-    aucs.append(auc)
-    
-aucs = np.array(aucs)
-print(aucs, aucs.mean(), aucs.std())
-ipdb.set_trace()
-#lr.train(features_patients, gt_patients)
+lr.train(x_train, y_train)
+p_test = lr.predict(x_test)
+print(Counter(y_train))
+print("without smote", roc_auc_score(y_test, p_test))
 
+smt = SMOTE()
+x_train, y_train = smt.fit_sample(x_train, y_train)
+lr = LogisticRegressionL2()
+lr.train(x_train, y_train)
+p_test = lr.predict(x_test)
+print(Counter(y_train))
+print("without smote", roc_auc_score(y_test, p_test))
+
+
+ipdb.set_trace()
+
+#train the model
+lr = LogisticRegressionL2()
+lr.train(features_patients, gt_patients)
 
 
 # predict on real test set
