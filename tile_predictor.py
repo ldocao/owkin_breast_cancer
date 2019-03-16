@@ -88,3 +88,46 @@ class LogisticRegressionL2(TilePredictor):
         grid_search.fit(x, y)
         print("best score", grid_search.best_score_)
         return grid_search.best_params_
+
+
+
+
+class XGBoost(TilePredictor):
+    def __init__(self):
+        PARAMS = {"n_jobs": -1,
+                  "objective": "binary:logistic",
+	          'eta': 0.3,
+                  "max_depth": 3,
+                  'silent': 1,
+                  'eval_metric': 'auc',
+                  "learning_rate": 0.1,
+                  "n_jobs": -1}	
+        self.estimator = XGBClassifier(**PARAMS)
+
+    def train(self, x, y):
+        self.estimator.fit(x, y)
+        return self.estimator	 
+
+    def predict(self, x):
+        return self.estimator.predict(x)
+
+    def cross_validation(self, x, y):
+        cls = self.__class__
+        x_train = xgb.DMatrix(x, label=y)
+        results = xgb.cv(self.params, x_train,
+        	         n_fold=cls.N_FOLD, num_boost_round=3,
+                         stratified=True, shuffle=True)
+        return results
+
+    def grid_search(self, x, y):
+        cls = self.__class__
+        GRID = {"eta": np.logspace(-3, -1, 5),
+                "learning_rate": np.logspace(-4, -2, 5),
+                "max_depth": [2,3,4],
+                "reg_lambda": np.logspace(-4, 0, 5)}
+        grid_search = GridSearchCV(self.estimator, GRID,
+                                   n_jobs=-1, cv=cls.N_FOLD,
+                                   scoring="roc_auc")
+        grid_search.fit(x, y)
+        print("best score", grid_search.best_score_)
+        return grid_search.best_params_

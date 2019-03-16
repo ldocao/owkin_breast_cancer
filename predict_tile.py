@@ -15,7 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV, cross_val_score, StratifiedKFold, train_test_split
 
 from camelyon16 import TrainingPatients, TestPatients
-from tile_predictor import LogisticRegressionL2
+from tile_predictor import LogisticRegressionL2, XGBoost
 
 
 #load  data
@@ -24,10 +24,20 @@ training = TrainingPatients()
 features = training.stack_annotated_tile_features()
 ground_truths = training.annotations["Target"].values
 
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
+smt = SMOTE()
+features, ground_truths = smt.fit_sample(features, ground_truths)
+xgb = XGBoost()
+best_params = xgb.grid_search(features, ground_truths)
+print(best_params)
+
+
 #cross validation for check
 pipeline = Pipeline([('scaler', StandardScaler()),
                      ('sampling', SMOTE()),
-                     ('classification', LogisticRegressionL2().estimator)])
+#                     ('classification', LogisticRegressionL2().estimator)])
+                     ('classification', XGBoost().estimator)])
 
 cv = StratifiedKFold(n_splits=5,
                      shuffle=True,
@@ -38,7 +48,7 @@ auc = cross_val_score(pipeline,
 auc = np.array(auc)
 print(auc, auc.mean(), auc.std())
 
-
+ipdb.set_trace()
 
 #apply standard scaler anyway
 scaler = StandardScaler()
