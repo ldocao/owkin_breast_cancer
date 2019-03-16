@@ -40,11 +40,11 @@ class Challenge(object):
     def _rename_and_type_columns(self):
         cls = self.__class__
         
-        self.predictions.index.name = cls.INDEX_NAME
         self.predictions.index = [str(i).zfill(cls.N_DIGITS) for i in self.predictions.index]
-        
         self.predictions.index = self.predictions.index.astype(str)
+        self.predictions.index.name = cls.INDEX_NAME
         self.predictions[cls.TARGET_COLUMN] = self.predictions[cls.TARGET_COLUMN].astype(float)
+        
 
     def _check_target_range(self):
         cls = self.__class__
