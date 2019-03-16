@@ -32,23 +32,23 @@ for i in range(n_patients):
     features_patients[i,:] = TileFeature(tile_probas).engineer()
 
 scaler = StandardScaler()
-#features_patients = scaler.fit_transform(features_patients)
+features_patients = scaler.fit_transform(features_patients)
 
-x_train = features_patients[:200, :]
-y_train = gt_patients[:200]
-x_train = scaler.fit_transform(x_train)
-x_test = features_patients[200:, :]
-x_test = scaler.transform(x_test)
-lr = LogisticRegressionL2()
-lr.train(x_train, y_train)
-pp = lr.predict(x_test)
-print(roc_auc_score(gt_patients[200:], pp))
 
-ipdb.set_trace()
 
 #train the model
 lr = LogisticRegressionL2()
-lr.train(features_patients, gt_patients)
+#lr.train(features_patients, gt_patients)
+N_RUNS = 4
+aucs = []
+for i in range(N_RUNS):
+    auc = lr.cross_validation(features_patients, gt_patients,seed=i)
+    aucs.append(auc)
+    
+aucs = np.array(aucs)
+print(aucs, aucs.mean(), aucs.std())
+ipdb.set_trace()
+#lr.train(features_patients, gt_patients)
 
 
 
