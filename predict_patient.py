@@ -1,48 +1,72 @@
+import ipdb
+
 import os
 import pickle
 import numpy as np
 import pandas as pd
 
-from camelyon16 import TrainingPatients, TestPatients, AnnotatedTile
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
+
+from camelyon16 import TrainingPatients
 from patient_predictor import LogisticRegressionL2
+from tile_feature import TileFeature
+from challenge import Challenge
 
 
-training_ids = TrainingPatients().ids
-gt_patients = TrainingPatients().ground_truths["Target"].values 
+#load training
+with open('predict_tile_training.pkl', 'rb') as handle:
+    training_predictions = pickle.load(handle)
+
+training_ids = sorted(list(training_predictions.keys()))
 n_patients = len(training_ids)
+gt_patients = TrainingPatients().ground_truths["Target"].values 
 
 
-
-
-with open('predict_tile.pkl', 'rb') as handle:
-    tile_predictions = pickle.load(handle)
-
-
-def construct_features_from_tile(features):
-    QUARTILES = [25, 50, 75]
-    x1 = np.mean(features)
-    x2 = np.std(features)
-    x3 = np.percentile(features, QUARTILES[0])
-    x4 = np.percentile(features, QUARTILES[1])
-    x5 = np.percentile(features, QUARTILES[2])
-    x6 = np.max(features)
-    x7 = np.min(features)
-    x8 = (features > 0.5).sum() / len(features)
-    return (x1, x2, x3, x4, x5, x6, x7, x8)
-
-
-
-features_train_patients = np.zeros([n_patients, 8])
+#construct feature matrix
+N_FEATURES = 9 #deduced from TileFeature.engineer
+features_patients = np.zeros([n_patients, N_FEATURES])
 for i in range(n_patients):
     p = training_ids[i]
-    features_train_patients[i,:] = construct_features_from_tile(tile_predictions[p])
+    tile_probas = training_predictions[p] #tile prediction values
+    features_patients[i,:] = TileFeature(tile_probas).engineer()
+
+scaler = StandardScaler()
+#features_patients = scaler.fit_transform(features_patients)
+
+x_train = features_patients[:200, :]
+y_train = gt_patients[:200]
+x_train = scaler.fit_transform(x_train)
+x_test = features_patients[200:, :]
+x_test = scaler.transform(x_test)
+lr = LogisticRegressionL2()
+lr.train(x_train, y_train)
+pp = lr.predict(x_test)
+print(roc_auc_score(gt_patients[200:], pp))
+
+ipdb.set_trace()
+
+#train the model
+lr = LogisticRegressionL2()
+lr.train(features_patients, gt_patients)
+
+
+
+# predict on real test set
+with open('predict_tile_test.pkl', 'rb') as handle:
+    test_predictions = pickle.load(handle)
+
+test_ids = sorted(list(test_predictions.keys()))
+n_patients = len(test_ids)
+
+features_patients = np.zeros([n_patients, N_FEATURES])
+for i in range(n_patients):
+    p = test_ids[i]
+    tile_probas = test_predictions[p]
+    features_patients[i,:] = TileFeature(tile_probas).engineer()
+
+features_patients = scaler.transform(features_patients)    
     
-
-N_RUN = 4
-aucs = []
-for i in range(N_RUN):    
-    lr = LogisticRegressionL2()
-    auc = lr.cross_validation(features_train_patients, gt_patients, i)
-    aucs.append(auc)
-
+predictions = lr.predict(features_patients)
+#Challenge(test_ids, predictions).submit("predict_patient3.csv")
 
