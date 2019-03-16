@@ -37,33 +37,11 @@ for i in range(n_patients):
 scaler = StandardScaler()
 features_patients = scaler.fit_transform(features_patients)
 
-#augment with SMOTE
-x_train, x_test, y_train, y_test = train_test_split(features_patients, gt_patients,
-                                                    test_size=0.2,
-                                                    shuffle=True, stratify=gt_patients,
-                                                    random_state=1)
-
-#train the model
-lr = LogisticRegressionL2()
-lr.train(x_train, y_train)
-p_test = lr.predict(x_test)
-print(Counter(y_train))
-print("without smote", roc_auc_score(y_test, p_test))
-
 smt = SMOTE()
-x_train, y_train = smt.fit_sample(x_train, y_train)
-lr = LogisticRegressionL2()
-lr.train(x_train, y_train)
-p_test = lr.predict(x_test)
-print(Counter(y_train))
-print("without smote", roc_auc_score(y_test, p_test))
-
-
-ipdb.set_trace()
-
-#train the model
+features_patients, gt_patients = smt.fit_sample(features_patients, gt_patients)
 lr = LogisticRegressionL2()
 lr.train(features_patients, gt_patients)
+
 
 
 # predict on real test set
@@ -80,7 +58,6 @@ for i in range(n_patients):
     features_patients[i,:] = TileFeature(tile_probas).engineer()
 
 features_patients = scaler.transform(features_patients)    
-    
 predictions = lr.predict(features_patients)
-#Challenge(test_ids, predictions).submit("predict_patient3.csv")
+Challenge(test_ids, predictions).submit("predict_patient4.csv")
 
