@@ -37,8 +37,8 @@ for i in range(n_patients):
 scaler = StandardScaler()
 features_patients = scaler.fit_transform(features_patients)
 
-smt = SMOTE()
-features_patients, gt_patients = smt.fit_sample(features_patients, gt_patients)
+# smt = SMOTE()
+# features_patients, gt_patients = smt.fit_sample(features_patients, gt_patients)
 lr = LogisticRegressionL2()
 lr.train(features_patients, gt_patients)
 
@@ -59,5 +59,5 @@ for i in range(n_patients):
 
 features_patients = scaler.transform(features_patients)    
 predictions = lr.predict(features_patients)
-Challenge(test_ids, predictions).submit("predict_patient4.csv")
+Challenge(test_ids, predictions).submit("predict_patient5.csv")
 
