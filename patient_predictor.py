@@ -22,7 +22,7 @@ class LogisticRegressionL2(PatientPredictor):
 
     def __init__(self):
         PARAMS = {"penalty": "l2",
-                  "C": 0.8,
+                  "C": 0.75,
                   "solver": "liblinear"}
         self.estimator = LogisticRegression(**PARAMS)
 
@@ -31,12 +31,12 @@ class LogisticRegressionL2(PatientPredictor):
         return self.estimator
 
     def predict(self, x):
-        return self.estimator.predict_proba(x)
+        return self.estimator.predict_proba(x)[:, 1]
         
     def grid_search(self, x, y):
         cls = self.__class__
         GRID = {"penalty": ["l2"],
-                "C": np.linspace(0.7, 1, 10),
+                "C": np.linspace(0.1, 1, 50),
                 "solver": ["liblinear"]}
         grid_search = GridSearchCV(self.estimator, GRID, n_jobs=-1, cv=cls.N_FOLD)
         grid_search.fit(x, y)
