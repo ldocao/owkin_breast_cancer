@@ -4,41 +4,40 @@ import ipdb
 import os
 import pickle
 
+import numpy as np
+import pandas as pd
 
 from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 from camelyon16 import TrainingPatients, TestPatients
 from tile_predictor import LogisticRegressionL2
 
 
-#training
-features = TrainingPatients().stack_annotated_tile_features()
-ground_truths = TrainingPatients().annotations["Target"].values
+#load training data
+training = TrainingPatients()
+features = training.stack_annotated_tile_features()
+ground_truths = training.annotations["Target"].values
 
-#grid search
+
+#train classifier
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
 clf = LogisticRegressionL2()
-# best_params = clf.grid_search(features, ground_truths)
-# print(best_params)
+clf.train(features, ground_truths)
 
 
-#predict upon all tiles
-clf.train(features, ground_truths) #train over all annotated tiles
-patient_ids = TrainingPatients().tiles["patient_id"].unique()
-patient_ids = [str(i).zfill(3) for i in patient_ids]
-tile_probas = clf.predict_tiles_of(patient_ids)
+#predict over all tiles
+tile_probas = clf.predict_tiles_of(training, scaler)
 
-#predict upon test tiles
-test_ids = TestPatients().ids
-test_probas = {}
-for p in test_ids:
-    resnet = TestPatients().resnet_features(p)
-    n_tiles = resnet.shape[0]
-    proba = clf.estimator.predict_proba(resnet)[:,1]
-    test_probas[p] = proba
-
-
-tile_probas = {**tile_probas, **test_probas} #merge training and test set
-
-with open('predict_tile.pkl', 'wb') as handle:
+with open('predict_tile_training.pkl', 'wb') as handle:
     pickle.dump(tile_probas, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+#predict upon test tiles
+test = TestPatients()
+test_probas = clf.predict_tiles_of(test, scaler)
+
+with open('predict_tile_test.pkl', 'wb') as handle:
+    pickle.dump(test_probas, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
