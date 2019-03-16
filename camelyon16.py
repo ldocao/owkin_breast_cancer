@@ -34,6 +34,7 @@ class Camelyon16(object):
         tile_path = Path(self.path) / self.__class__.TILE_INFO
         if tile_path.exists():
             tile_infos = pd.read_csv(tile_path)
+            tile_infos["tile_id"] = [str(i).zfill(3) for i in tile_infos["tile_id"]]
             tile_infos.set_index(INDEX_NAME, inplace=True)
         else:
             tile_infos = self._extract_tile_infos()
@@ -156,7 +157,7 @@ class TrainingPatients(Camelyon16):
 
 
     def stack_annotated_tile_features(self):
-        annotated_patients = self.annotations["ID"].unique()
+        annotated_patients = sorted(self.annotations["ID"].unique())
         tiles = []
         for p in annotated_patients:
             resnet = self.resnet_features(p)
